@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر وسن التقني - عداد مصاريف التسوق</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 550px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .display-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .display-box .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .display-box .total-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .display-box .session-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="number"] {
+            flex: 1;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            padding: 12px 20px;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .items-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 0;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+
+        .item-row span {
+            color: var(--text-muted);
+        }
+
+        .item-row button {
+            background: none;
+            color: var(--danger);
+            padding: 2px 6px;
+            font-size: 0.8rem;
+        }
+
+        .archives-section {
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .archives-section h3 {
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+        }
+
+        .archive-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 10px;
+        }
+
+        /* تذييل الصفحة والتوقيع */
+        footer.app-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>عداد  مصاريف التسوق</h1>
+            <p>إدارة وترشيد الإنفاق اللحظي</p>
+        </header>
+
+        <!-- لوحة العرض الإجمالي -->
+        <div class="display-box">
+            <div class="label">إجمالي جلسة التسوق الحالية</div>
+            <div class="total-amount" id="totalDisplay">0.00</div>
+            <div class="session-date" id="sessionDate">بداية الجلسة: -</div>
+        </div>
+
+        <!-- حقل إدخال المبلغ -->
+        <div class="input-group">
+            <input type="number" id="amountInput" placeholder="أدخل السعر (مثلاً: 25.5)" step="any" inputmode="decimal">
+            <button class="btn-primary" onclick="addAmount()">إضافة +</button>
+        </div>
+
+        <!-- قائمة السلع المدخلة لهذه الجلسة -->
+        <div class="items-list" id="itemsList">
+            <div class="empty-msg">لم يتم إدخال سلع بعد</div>
+        </div>
+
+        <!-- الأزرار الإدارية للجلسة -->
+        <div class="actions-grid">
+            <button class="btn-primary" onclick="saveAndResetSession()">حفظ وإنهاء الشهر</button>
+            <button class="btn-danger" onclick="resetCurrentSession()">تصفير العداد</button>
+        </div>
+
+        <!-- قسم الأرشيف الشهري -->
+        <div class="archives-section">
+            <h3>أرشيف المصروفات الشهرية</h3>
+            <div id="archivesList">
+                <div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>
+            </div>
+        </div>
+
+        <!-- توقيع متجر وسن الرقمي في التذييل -->
+        <footer class="app-footer">
+            جميع الحقوق محفوظة &copy; 2026 — <strong>متجر وسن التقني</strong>
+        </footer>
+    </div>
+
+    <script>
+        let currentTotal = 0;
+        let sessionItems = [];
+        let sessionStartTime = "";
+
+        window.onload = function() {
+            loadCurrentSession();
+            renderArchives();
+            if (!sessionStartTime) {
+                setSessionStart();
+            }
+        };
+
+        function setSessionStart() {
+            const now = new Date();
+            sessionStartTime = now.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
+        }
+
+        function addAmount() {
+            const input = document.getElementById('amountInput');
+            const val = parseFloat(input.value);
+
+            if (isNaN(val) || val <= 0) {
+                alert('الرجاء إدخال مبلغ صحيح أكبر من الصفر');
+                return;
+            }
+
+            currentTotal += val;
+            sessionItems.push({ id: Date.now(), amount: val });
+            
+            input.value = '';
+            input.focus();
+            updateUI();
+            saveCurrentSessionToStorage();
+        }
+
+        function removeItem(id) {
+            const index = sessionItems.findIndex(item => item.id === id);
+            if (index !== -1) {
+                currentTotal -= sessionItems[index].amount;
+                sessionItems.splice(index, 1);
+                updateUI();
+                saveCurrentSessionToStorage();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('totalDisplay').innerText = currentTotal.toFixed(2);
+            
+            const listContainer = document.getElementById('itemsList');
+            if (sessionItems.length === 0) {
+                listContainer.innerHTML = '<div class="empty-msg">لم يتم إدخال سلع بعد</div>';
+                return;
+            }
+
+            let html = '';
+            sessionItems.slice().reverse().forEach(item => {
+                html += `
+                    <div class="item-row">
+                        <strong>${item.amount.toFixed(2)} ر.س</strong>
+                        <button onclick="removeItem(${item.id})">حذف</button>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        function saveCurrentSessionToStorage() {
+            const data = {
+                total: currentTotal,
+                items: sessionItems,
+                startTime: sessionStartTime
+            };
+            localStorage.setItem('wasan_current_session', JSON.stringify(data));
+        }
+
+        function loadCurrentSession() {
+            const saved = localStorage.getItem('wasan_current_session');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentTotal = data.total || 0;
+                sessionItems = data.items || [];
+                sessionStartTime = data.startTime || "";
+                if (sessionStartTime) {
+                    document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
+                }
+                updateUI();
+            }
+        }
+
+        function resetCurrentSession() {
+            if (confirm('هل أنت متأكد من تصفير العداد الحالي؟')) {
+                currentTotal = 0;
+                sessionItems = [];
+                setSessionStart();
+                updateUI();
+                localStorage.removeItem('wasan_current_session');
+            }
+        }
+
+        function saveAndResetSession() {
+            if (currentTotal <= 0) {
+                alert('لا يوجد مصروفات لتسجيلها هذا الشهر.');
+                return;
+            }
+
+            const now = new Date();
+            const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+            const currentMonthYear = monthNames[now.getMonth()] + " " + now.getFullYear();
+
+            let archives = JSON.parse(localStorage.getItem('wasan_expense_archives') || '{}');
+            
+            if (archives[currentMonthYear]) {
+                archives[currentMonthYear] += currentTotal;
+            } else {
+                archives[currentMonthYear] = currentTotal;
+            }
+
+            localStorage.setItem('wasan_expense_archives', JSON.stringify(archives));
+
+            currentTotal = 0;
+            sessionItems = [];
+            setSessionStart();
+            updateUI();
+            localStorage.removeItem('wasan_current_session');
+            renderArchives();
+            alert('تم حفظ وترحيل إجمالي المصروفات بنجاح إلى أرشيف الشهر!');
+        }
+
+        function renderArchives() {
+            const archivesContainer = document.getElementById('archivesList');
+            const archives = JSON.parse(localStorage.getItem('wasan_expense_archives') || '{}');
+            const keys = Object.keys(archives);
+
+            if (keys.length === 0) {
+                archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>';
+                return;
+            }
+
+            let html = '';
+            keys.reverse().forEach(month => {
+                html += `
+                    <div class="archive-card">
+                        <span><strong>${month}</strong></span>
+                        <span style="color: var(--success); font-weight: bold;">${archives[month].toFixed(2)} ر.س</span>
+                    </div>
+                `;
+            });
+            archivesContainer.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+
