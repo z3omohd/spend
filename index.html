@@ -64,6 +64,20 @@
             color: var(--text-muted);
         }
 
+        .user-status {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
         .budget-setup {
             display: flex;
             gap: 8px;
@@ -303,8 +317,14 @@
     <div class="container">
         <header>
             <h1>Wasan Expense Tracker</h1>
-            <p>عداد مصاريف التسوق الذكي (سحابي متكامل)</p>
+            <p>عداد مصاريف التسوق الذكي (حساب خاص وآمن)</p>
         </header>
+
+        <!-- شريط حالة الخصوصية والمستخدم -->
+        <div class="user-status">
+            <span>🔒 المساحة: <strong>خاصة بـ مستخدم جهازك</strong></span>
+            <span id="userBadge" style="font-size: 0.7rem; opacity: 0.8;">جاري الاتصال...</span>
+        </div>
 
         <!-- حقل تحديد سقف الميزانية -->
         <div class="budget-setup">
@@ -338,7 +358,7 @@
 
         <!-- قائمة السلع المدخلة لهذه الجلسة -->
         <div class="items-list" id="itemsList">
-            <div class="empty-msg">جاري تحميل البيانات من السحابة...</div>
+            <div class="empty-msg">جاري تحميل مساحتك الخاصة...</div>
         </div>
 
         <!-- الأزرار الإدارية للجلسة -->
@@ -347,11 +367,11 @@
             <button class="btn-danger" id="resetBtn">🔄 تصفير العداد</button>
         </div>
 
-        <!-- قسم الأرشيف الشهري -->
+        <!-- قسم الأرشيف الشهري الخاص -->
         <div class="archives-section">
-            <h3>📊 أرشيف المصروفات الشهرية</h3>
+            <h3>📊 أرشيفك الشهري الخاص</h3>
             <div id="archivesList">
-                <div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>
+                <div class="empty-msg">لا توجد أشهر مؤرشفة في حسابك بعد</div>
             </div>
         </div>
 
@@ -360,9 +380,10 @@
         </footer>
     </div>
 
-    <!-- ربط وحدات Firebase Module SDK الخاصة بمشروع spend-4d2a2 -->
+    <!-- ربط وحدات Firebase Module SDK وشعاع الخصوصية المخصص -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -375,8 +396,11 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
+        let currentUser = null;
+        let unsubscribeSession = null;
         let currentTotal = 0;
         let sessionItems = [];
         let sessionStartTime = "";
@@ -387,16 +411,33 @@
         const addBtn = document.getElementById('addBtn');
         const saveMonthBtn = document.getElementById('saveMonthBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const userBadge = document.getElementById('userBadge');
 
-        window.addEventListener('DOMContentLoaded', () => {
-            listenToCurrentSession();
-            renderArchives();
+        // تسجيل الدخول التلقائي المستقل لكل جهاز
+        signInAnonymously(auth).catch((error) => {
+            console.error("خطأ تسجيل الدخول البسيط:", error);
         });
 
-        // الاستماع اللحظي التلقائي للتغيرات السحابية (Realtime Sync)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                userBadge.innerText = "ID: " + user.uid.substring(0, 6) + "...";
+                listenToCurrentSession();
+                renderArchives();
+            } else {
+                currentUser = null;
+                userBadge.innerText = "غير متصل";
+            }
+        });
+
+        // الاستماع الفوري لمساحة المستخدم الخاصة فقط users/{uid}/sessions/current_session
         function listenToCurrentSession() {
-            const docRef = doc(db, 'sessions', 'current_session');
-            onSnapshot(docRef, (docSnap) => {
+            if (!currentUser) return;
+            
+            if (unsubscribeSession) unsubscribeSession();
+
+            const docRef = doc(db, 'users', currentUser.uid, 'sessions', 'current_session');
+            unsubscribeSession = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     currentTotal = data.total || 0;
@@ -526,8 +567,9 @@
         }
 
         async function saveCurrentSessionToFirebase() {
+            if (!currentUser) return;
             try {
-                const docRef = doc(db, 'sessions', 'current_session');
+                const docRef = doc(db, 'users', currentUser.uid, 'sessions', 'current_session');
                 await setDoc(docRef, {
                     total: currentTotal,
                     items: sessionItems,
@@ -540,13 +582,14 @@
         }
 
         async function resetCurrentSession() {
+            if (!currentUser) return;
             if (confirm('هل أنت متأكد من تصفير العداد الحالي؟')) {
                 currentTotal = 0;
                 sessionItems = [];
                 setSessionStart();
                 updateUI();
                 try {
-                    await deleteDoc(doc(db, 'sessions', 'current_session'));
+                    await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', 'current_session'));
                 } catch (e) {
                     console.error("خطأ أثناء التصفير:", e);
                 }
@@ -555,6 +598,7 @@
         resetBtn.addEventListener('click', resetCurrentSession);
 
         async function saveAndResetSession() {
+            if (!currentUser) return;
             if (currentTotal <= 0) {
                 alert('لا يوجد مصروفات لتسجيلها هذا الشهر.');
                 return;
@@ -565,7 +609,7 @@
             const currentMonthYear = monthNames[now.getMonth()] + " " + now.getFullYear();
 
             try {
-                const archiveRef = doc(db, 'archives', currentMonthYear);
+                const archiveRef = doc(db, 'users', currentUser.uid, 'archives', currentMonthYear);
                 const archiveSnap = await getDoc(archiveRef);
 
                 let updatedTotal = currentTotal;
@@ -587,10 +631,10 @@
                 sessionItems = [];
                 setSessionStart();
                 updateUI();
-                await deleteDoc(doc(db, 'sessions', 'current_session'));
+                await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', 'current_session'));
 
                 await renderArchives();
-                alert('تم حفظ وترحيل المصروفات بنجاح إلى Firebase!');
+                alert('تم حفظ وترحيل المصروفات بنجاح إلى أرشيفك الخاص!');
             } catch (error) {
                 console.error("خطأ أثناء الحفظ للأرشيف:", error);
                 alert("حدث خطأ أثناء الحفظ في Firebase.");
@@ -599,12 +643,13 @@
         saveMonthBtn.addEventListener('click', saveAndResetSession);
 
         async function renderArchives() {
+            if (!currentUser) return;
             const archivesContainer = document.getElementById('archivesList');
             try {
-                const querySnapshot = await getDocs(collection(db, 'archives'));
+                const querySnapshot = await getDocs(collection(db, 'users', currentUser.uid, 'archives'));
 
                 if (querySnapshot.empty) {
-                    archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>';
+                    archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة في حسابك بعد</div>';
                     return;
                 }
 
@@ -625,13 +670,14 @@
                 archivesContainer.innerHTML = html;
             } catch (error) {
                 console.error("خطأ أثناء تحميل الأرشيف:", error);
-                archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>';
+                archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة في حسابك بعد</div>';
             }
         }
 
         async function exportMonthCSV(monthKey) {
+            if (!currentUser) return;
             try {
-                const archiveRef = doc(db, 'archives', monthKey);
+                const archiveRef = doc(db, 'users', currentUser.uid, 'archives', monthKey);
                 const archiveSnap = await getDoc(archiveRef);
 
                 if (!archiveSnap.exists()) return;
