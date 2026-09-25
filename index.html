@@ -303,7 +303,7 @@
     <div class="container">
         <header>
             <h1>Wasan Expense Tracker</h1>
-            <p>عداد مصاريف التسوق الذكي (سحابي)</p>
+            <p>عداد مصاريف التسوق الذكي (سحابي متكامل)</p>
         </header>
 
         <!-- حقل تحديد سقف الميزانية -->
@@ -360,12 +360,11 @@
         </footer>
     </div>
 
-    <!-- ربط وحدات Firebase Module SDK الخاصة بـ spend-4d2a2 -->
+    <!-- ربط وحدات Firebase Module SDK الخاصة بمشروع spend-4d2a2 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // إعدادات مشروع spend-4d2a2
         const firebaseConfig = {
             apiKey: "AIzaSyB7wBf2nCjYlWuJSHfn28mN6FHI-EgldNY",
             authDomain: "spend-4d2a2.firebaseapp.com",
@@ -375,13 +374,13 @@
             appId: "1:81219241661:web:2ad5baa00c313c3be519d4"
         };
 
-        // تهيئة التطبيق وقاعدة البيانات Firestore
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let currentTotal = 0;
         let sessionItems = [];
         let sessionStartTime = "";
+        let budgetLimitValue = 0;
 
         const budgetInput = document.getElementById('budgetLimit');
         const amountInput = document.getElementById('amountInput');
@@ -389,24 +388,44 @@
         const saveMonthBtn = document.getElementById('saveMonthBtn');
         const resetBtn = document.getElementById('resetBtn');
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            await loadCurrentSession();
-            await renderArchives();
-
-            if (!sessionStartTime) {
-                setSessionStart();
-            }
-
-            const savedBudget = localStorage.getItem('wasan_budget_limit');
-            if (savedBudget) {
-                budgetInput.value = savedBudget;
-            }
-            updateBudgetProgress();
+        window.addEventListener('DOMContentLoaded', () => {
+            listenToCurrentSession();
+            renderArchives();
         });
 
-        budgetInput.addEventListener('input', () => {
-            localStorage.setItem('wasan_budget_limit', budgetInput.value);
+        // الاستماع اللحظي التلقائي للتغيرات السحابية (Realtime Sync)
+        function listenToCurrentSession() {
+            const docRef = doc(db, 'sessions', 'current_session');
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    currentTotal = data.total || 0;
+                    sessionItems = data.items || [];
+                    sessionStartTime = data.startTime || "";
+                    budgetLimitValue = data.budgetLimit || 0;
+
+                    budgetInput.value = budgetLimitValue > 0 ? budgetLimitValue : "";
+                    
+                    if (sessionStartTime) {
+                        document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
+                    }
+                } else {
+                    currentTotal = 0;
+                    sessionItems = [];
+                    budgetLimitValue = 0;
+                    budgetInput.value = "";
+                    if (!sessionStartTime) setSessionStart();
+                }
+                updateUI();
+            }, (error) => {
+                console.error("خطأ التزامن الحقيقي:", error);
+            });
+        }
+
+        budgetInput.addEventListener('input', async () => {
+            budgetLimitValue = parseFloat(budgetInput.value) || 0;
             updateBudgetProgress();
+            await saveCurrentSessionToFirebase();
         });
 
         function setSessionStart() {
@@ -423,6 +442,8 @@
                 alert('الرجاء إدخال مبلغ صحيح أكبر من الصفر');
                 return;
             }
+
+            if (!sessionStartTime) setSessionStart();
 
             currentTotal += val;
             sessionItems.push({ id: Date.now(), amount: val });
@@ -468,8 +489,7 @@
         }
 
         function updateBudgetProgress() {
-            const limitInput = budgetInput.value;
-            const limit = parseFloat(limitInput);
+            const limit = parseFloat(budgetInput.value);
 
             const fill = document.getElementById('progressBarFill');
             const percentText = document.getElementById('progressPercent');
@@ -511,33 +531,11 @@
                 await setDoc(docRef, {
                     total: currentTotal,
                     items: sessionItems,
-                    startTime: sessionStartTime
+                    startTime: sessionStartTime,
+                    budgetLimit: parseFloat(budgetInput.value) || 0
                 });
             } catch (error) {
                 console.error("خطأ أثناء الحفظ في Firebase:", error);
-            }
-        }
-
-        async function loadCurrentSession() {
-            try {
-                const docRef = doc(db, 'sessions', 'current_session');
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    currentTotal = data.total || 0;
-                    sessionItems = data.items || [];
-                    sessionStartTime = data.startTime || "";
-                    if (sessionStartTime) {
-                        document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
-                    }
-                    updateUI();
-                } else {
-                    updateUI();
-                }
-            } catch (error) {
-                console.error("خطأ أثناء جلب البيانات من Firebase:", error);
-                updateUI();
             }
         }
 
