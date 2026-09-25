@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wasan Expense Tracker - عداد  مصاريف التسوق</title>
+    <title>Wasan Expense Tracker - عداد مصاريف التسوق</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -65,7 +64,6 @@
             color: var(--text-muted);
         }
 
-        /* إعداد الميزانية المستهدفة */
         .budget-setup {
             display: flex;
             gap: 8px;
@@ -94,7 +92,6 @@
             outline: none;
         }
 
-        /* لوحة العرض الإجمالي */
         .display-box {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border);
@@ -123,7 +120,6 @@
             margin-top: 6px;
         }
 
-        /* شريط تقدم الميزانية */
         .progress-container {
             margin-bottom: 15px;
         }
@@ -292,7 +288,6 @@
             padding: 8px;
         }
 
-        /* توقيع متجر وسن الرقمي في التذييل */
         footer.app-footer {
             margin-top: auto;
             border-top: 1px solid var(--border);
@@ -308,13 +303,13 @@
     <div class="container">
         <header>
             <h1>Wasan Expense Tracker</h1>
-            <p>عداد  مصاريف التسوق الذكي</p>
+            <p>عداد مصاريف التسوق الذكي (سحابي)</p>
         </header>
 
         <!-- حقل تحديد سقف الميزانية -->
         <div class="budget-setup">
             <label for="budgetLimit">سقف الميزانية:</label>
-            <input type="number" id="budgetLimit" placeholder="مثلاً: 1000" oninput="updateBudgetProgress()">
+            <input type="number" id="budgetLimit" placeholder="مثلاً: 1000">
         </div>
 
         <!-- لوحة العرض الإجمالي -->
@@ -338,18 +333,18 @@
         <!-- حقل إدخال المبلغ -->
         <div class="input-group">
             <input type="number" id="amountInput" placeholder="أدخل السعر (مثلاً: 25.5)" step="any" inputmode="decimal">
-            <button class="btn-primary" onclick="addAmount()">➕ إضافة</button>
+            <button class="btn-primary" id="addBtn">➕ إضافة</button>
         </div>
 
         <!-- قائمة السلع المدخلة لهذه الجلسة -->
         <div class="items-list" id="itemsList">
-            <div class="empty-msg">لم يتم إدخال سلع بعد</div>
+            <div class="empty-msg">جاري تحميل البيانات من السحابة...</div>
         </div>
 
         <!-- الأزرار الإدارية للجلسة -->
         <div class="actions-grid">
-            <button class="btn-primary" onclick="saveAndResetSession()">💾 حفظ الشهر</button>
-            <button class="btn-danger" onclick="resetCurrentSession()">🔄 تصفير العداد</button>
+            <button class="btn-primary" id="saveMonthBtn">💾 حفظ الشهر</button>
+            <button class="btn-danger" id="resetBtn">🔄 تصفير العداد</button>
         </div>
 
         <!-- قسم الأرشيف الشهري -->
@@ -360,31 +355,60 @@
             </div>
         </div>
 
-        <!-- توقيع متجر وسن الرقمي في التذييل -->
         <footer class="app-footer">
             جميع الحقوق محفوظة &copy; 2026 — <strong>متجر وسن التقني (Wasan Tech Store)</strong>
         </footer>
     </div>
 
-    <script>
+    <!-- ربط وحدات Firebase Module SDK الخاصة بـ spend-4d2a2 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // إعدادات مشروع spend-4d2a2
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7wBf2nCjYlWuJSHfn28mN6FHI-EgldNY",
+            authDomain: "spend-4d2a2.firebaseapp.com",
+            projectId: "spend-4d2a2",
+            storageBucket: "spend-4d2a2.firebasestorage.app",
+            messagingSenderId: "81219241661",
+            appId: "1:81219241661:web:2ad5baa00c313c3be519d4"
+        };
+
+        // تهيئة التطبيق وقاعدة البيانات Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         let currentTotal = 0;
         let sessionItems = [];
         let sessionStartTime = "";
 
-        window.onload = function() {
-            loadCurrentSession();
-            renderArchives();
+        const budgetInput = document.getElementById('budgetLimit');
+        const amountInput = document.getElementById('amountInput');
+        const addBtn = document.getElementById('addBtn');
+        const saveMonthBtn = document.getElementById('saveMonthBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadCurrentSession();
+            await renderArchives();
+
             if (!sessionStartTime) {
                 setSessionStart();
             }
+
             const savedBudget = localStorage.getItem('wasan_budget_limit');
-            if(savedBudget) {
-                document.getElementById('budgetLimit').value = savedBudget;
+            if (savedBudget) {
+                budgetInput.value = savedBudget;
             }
             updateBudgetProgress();
-        };
+        });
 
-        // ضبط التاريخ الميلادي حصراً (بدون أي تقويم هجري)
+        budgetInput.addEventListener('input', () => {
+            localStorage.setItem('wasan_budget_limit', budgetInput.value);
+            updateBudgetProgress();
+        });
+
         function setSessionStart() {
             const now = new Date();
             sessionStartTime = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + 
@@ -392,9 +416,8 @@
             document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
         }
 
-        function addAmount() {
-            const input = document.getElementById('amountInput');
-            const val = parseFloat(input.value);
+        async function addAmount() {
+            const val = parseFloat(amountInput.value);
 
             if (isNaN(val) || val <= 0) {
                 alert('الرجاء إدخال مبلغ صحيح أكبر من الصفر');
@@ -403,27 +426,29 @@
 
             currentTotal += val;
             sessionItems.push({ id: Date.now(), amount: val });
-            
-            input.value = '';
-            input.focus();
-            updateUI();
-            saveCurrentSessionToStorage();
-        }
 
-        function removeItem(id) {
+            amountInput.value = '';
+            amountInput.focus();
+            updateUI();
+            await saveCurrentSessionToFirebase();
+        }
+        addBtn.addEventListener('click', addAmount);
+
+        async function removeItem(id) {
             const index = sessionItems.findIndex(item => item.id === id);
             if (index !== -1) {
                 currentTotal -= sessionItems[index].amount;
                 sessionItems.splice(index, 1);
                 updateUI();
-                saveCurrentSessionToStorage();
+                await saveCurrentSessionToFirebase();
             }
         }
+        window.removeItem = removeItem;
 
         function updateUI() {
             document.getElementById('totalDisplay').innerText = currentTotal.toFixed(2);
             updateBudgetProgress();
-            
+
             const listContainer = document.getElementById('itemsList');
             if (sessionItems.length === 0) {
                 listContainer.innerHTML = '<div class="empty-msg">لم يتم إدخال سلع بعد</div>';
@@ -443,9 +468,8 @@
         }
 
         function updateBudgetProgress() {
-            const limitInput = document.getElementById('budgetLimit').value;
+            const limitInput = budgetInput.value;
             const limit = parseFloat(limitInput);
-            localStorage.setItem('wasan_budget_limit', limitInput);
 
             const fill = document.getElementById('progressBarFill');
             const percentText = document.getElementById('progressPercent');
@@ -481,40 +505,58 @@
             }
         }
 
-        function saveCurrentSessionToStorage() {
-            const data = {
-                total: currentTotal,
-                items: sessionItems,
-                startTime: sessionStartTime
-            };
-            localStorage.setItem('wasan_current_session', JSON.stringify(data));
+        async function saveCurrentSessionToFirebase() {
+            try {
+                const docRef = doc(db, 'sessions', 'current_session');
+                await setDoc(docRef, {
+                    total: currentTotal,
+                    items: sessionItems,
+                    startTime: sessionStartTime
+                });
+            } catch (error) {
+                console.error("خطأ أثناء الحفظ في Firebase:", error);
+            }
         }
 
-        function loadCurrentSession() {
-            const saved = localStorage.getItem('wasan_current_session');
-            if (saved) {
-                const data = JSON.parse(saved);
-                currentTotal = data.total || 0;
-                sessionItems = data.items || [];
-                sessionStartTime = data.startTime || "";
-                if (sessionStartTime) {
-                    document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
+        async function loadCurrentSession() {
+            try {
+                const docRef = doc(db, 'sessions', 'current_session');
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    currentTotal = data.total || 0;
+                    sessionItems = data.items || [];
+                    sessionStartTime = data.startTime || "";
+                    if (sessionStartTime) {
+                        document.getElementById('sessionDate').innerText = "بداية الجلسة: " + sessionStartTime;
+                    }
+                    updateUI();
+                } else {
+                    updateUI();
                 }
+            } catch (error) {
+                console.error("خطأ أثناء جلب البيانات من Firebase:", error);
                 updateUI();
             }
         }
 
-        function resetCurrentSession() {
+        async function resetCurrentSession() {
             if (confirm('هل أنت متأكد من تصفير العداد الحالي؟')) {
                 currentTotal = 0;
                 sessionItems = [];
                 setSessionStart();
                 updateUI();
-                localStorage.removeItem('wasan_current_session');
+                try {
+                    await deleteDoc(doc(db, 'sessions', 'current_session'));
+                } catch (e) {
+                    console.error("خطأ أثناء التصفير:", e);
+                }
             }
         }
+        resetBtn.addEventListener('click', resetCurrentSession);
 
-        function saveAndResetSession() {
+        async function saveAndResetSession() {
             if (currentTotal <= 0) {
                 alert('لا يوجد مصروفات لتسجيلها هذا الشهر.');
                 return;
@@ -524,71 +566,94 @@
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             const currentMonthYear = monthNames[now.getMonth()] + " " + now.getFullYear();
 
-            let archives = JSON.parse(localStorage.getItem('wasan_expense_archives_v2') || '{}');
-            
-            if (archives[currentMonthYear]) {
-                archives[currentMonthYear].total += currentTotal;
-                archives[currentMonthYear].items = archives[currentMonthYear].items.concat(sessionItems);
-            } else {
-                archives[currentMonthYear] = {
-                    total: currentTotal,
-                    items: [...sessionItems]
-                };
+            try {
+                const archiveRef = doc(db, 'archives', currentMonthYear);
+                const archiveSnap = await getDoc(archiveRef);
+
+                let updatedTotal = currentTotal;
+                let updatedItems = [...sessionItems];
+
+                if (archiveSnap.exists()) {
+                    const prevData = archiveSnap.data();
+                    updatedTotal += (prevData.total || 0);
+                    updatedItems = (prevData.items || []).concat(sessionItems);
+                }
+
+                await setDoc(archiveRef, {
+                    total: updatedTotal,
+                    items: updatedItems,
+                    monthYear: currentMonthYear
+                });
+
+                currentTotal = 0;
+                sessionItems = [];
+                setSessionStart();
+                updateUI();
+                await deleteDoc(doc(db, 'sessions', 'current_session'));
+
+                await renderArchives();
+                alert('تم حفظ وترحيل المصروفات بنجاح إلى Firebase!');
+            } catch (error) {
+                console.error("خطأ أثناء الحفظ للأرشيف:", error);
+                alert("حدث خطأ أثناء الحفظ في Firebase.");
             }
-
-            localStorage.setItem('wasan_expense_archives_v2', JSON.stringify(archives));
-
-            currentTotal = 0;
-            sessionItems = [];
-            setSessionStart();
-            updateUI();
-            localStorage.removeItem('wasan_current_session');
-            renderArchives();
-            alert('تم حفظ وترحيل المصروفات بنجاح إلى الأرشيف الشهري الميلادي!');
         }
+        saveMonthBtn.addEventListener('click', saveAndResetSession);
 
-        function renderArchives() {
+        async function renderArchives() {
             const archivesContainer = document.getElementById('archivesList');
-            const archives = JSON.parse(localStorage.getItem('wasan_expense_archives_v2') || '{}');
-            const keys = Object.keys(archives);
+            try {
+                const querySnapshot = await getDocs(collection(db, 'archives'));
 
-            if (keys.length === 0) {
-                archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>';
-                return;
-            }
+                if (querySnapshot.empty) {
+                    archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>';
+                    return;
+                }
 
-            let html = '';
-            keys.reverse().forEach(month => {
-                html += `
-                    <div class="archive-card">
-                        <span><strong>${month}</strong></span>
-                        <div class="archive-actions">
-                            <span style="color: var(--success); font-weight: bold;">${archives[month].total.toFixed(2)} ر.س</span>
-                            <button class="btn-sm" onclick="exportMonthCSV('${month}')">📥 CSV</button>
+                let html = '';
+                querySnapshot.forEach(docSnap => {
+                    const month = docSnap.id;
+                    const data = docSnap.data();
+                    html += `
+                        <div class="archive-card">
+                            <span><strong>${month}</strong></span>
+                            <div class="archive-actions">
+                                <span style="color: var(--success); font-weight: bold;">${data.total.toFixed(2)} ر.س</span>
+                                <button class="btn-sm" onclick="exportMonthCSV('${month}')">📥 CSV</button>
+                            </div>
                         </div>
-                    </div>
-                `;
-            });
-            archivesContainer.innerHTML = html;
+                    `;
+                });
+                archivesContainer.innerHTML = html;
+            } catch (error) {
+                console.error("خطأ أثناء تحميل الأرشيف:", error);
+                archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة بعد</div>';
+            }
         }
 
-        function exportMonthCSV(monthKey) {
-            const archives = JSON.parse(localStorage.getItem('wasan_expense_archives_v2') || '{}');
-            const data = archives[monthKey];
-            if (!data) return;
+        async function exportMonthCSV(monthKey) {
+            try {
+                const archiveRef = doc(db, 'archives', monthKey);
+                const archiveSnap = await getDoc(archiveRef);
 
-            let csvContent = "\uFEFFMonth,Amount (SAR)\n";
-            csvContent += `"${monthKey}",${data.total.toFixed(2)}\n`;
+                if (!archiveSnap.exists()) return;
 
-            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Wasan_Expenses_${monthKey.replace(' ', '_')}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+                const data = archiveSnap.data();
+                let csvContent = "\uFEFFMonth,Amount (SAR)\n";
+                csvContent += `"${monthKey}",${data.total.toFixed(2)}\n`;
+
+                const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `Wasan_Expenses_${monthKey.replace(' ', '_')}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("خطأ أثناء التصدير:", e);
+            }
         }
+        window.exportMonthCSV = exportMonthCSV;
     </script>
 </body>
 </html>
-
