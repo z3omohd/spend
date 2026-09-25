@@ -64,18 +64,82 @@
             color: var(--text-muted);
         }
 
+        /* شاشة تسجيل الدخول */
+        .auth-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .auth-card h2 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .auth-form input {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .auth-form input:focus {
+            border-color: var(--primary);
+        }
+
+        .auth-btns {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .auth-btns button {
+            flex: 1;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: var(--border);
+        }
+
         .user-status {
             background: rgba(59, 130, 246, 0.1);
             border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 0.75rem;
+            padding: 8px 12px;
+            font-size: 0.8rem;
             color: var(--primary);
-            text-align: center;
             margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+        }
+
+        .user-status button {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 2px 6px;
         }
 
         .budget-setup {
@@ -188,8 +252,8 @@
             border: none;
             border-radius: 10px;
             font-weight: bold;
-            font-size: 0.95rem;
-            padding: 12px 18px;
+            font-size: 0.9rem;
+            padding: 10px 16px;
             transition: background 0.2s;
             display: inline-flex;
             align-items: center;
@@ -302,6 +366,10 @@
             padding: 8px;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
         footer.app-footer {
             margin-top: auto;
             border-top: 1px solid var(--border);
@@ -317,61 +385,80 @@
     <div class="container">
         <header>
             <h1>Wasan Expense Tracker</h1>
-            <p>عداد مصاريف التسوق الذكي (حساب خاص وآمن)</p>
+            <p>عداد مصاريف التسوق الذكي (سحابي وآمن)</p>
         </header>
 
-        <!-- شريط حالة الخصوصية والمستخدم -->
-        <div class="user-status">
-            <span>🔒 المساحة: <strong>خاصة بـ مستخدم جهازك</strong></span>
-            <span id="userBadge" style="font-size: 0.7rem; opacity: 0.8;">جاري الاتصال...</span>
-        </div>
-
-        <!-- حقل تحديد سقف الميزانية -->
-        <div class="budget-setup">
-            <label for="budgetLimit">سقف الميزانية:</label>
-            <input type="number" id="budgetLimit" placeholder="مثلاً: 1000">
-        </div>
-
-        <!-- لوحة العرض الإجمالي -->
-        <div class="display-box">
-            <div class="label">إجمالي جلسة التسوق الحالية</div>
-            <div class="total-amount" id="totalDisplay">0.00</div>
-            <div class="session-date" id="sessionDate">بداية الجلسة: -</div>
-        </div>
-
-        <!-- شريط التقدم البصري للميزانية -->
-        <div class="progress-container">
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" id="progressBarFill"></div>
-            </div>
-            <div class="progress-text">
-                <span id="progressPercent">0% من الميزانية</span>
-                <span id="budgetRemaining">المتبقي: -</span>
+        <!-- كارت تسجيل الدخول والتسجيل -->
+        <div class="auth-card" id="authSection">
+            <h2>🔑 تسجيل الدخول لحفظ بياناتك دائماً</h2>
+            <div class="auth-form">
+                <input type="email" id="emailInput" placeholder="البريد (Gmail أو Outlook أو غيره)">
+                <input type="password" id="passwordInput" placeholder="كلمة المرور">
+                <div class="auth-btns">
+                    <button class="btn-primary" id="loginBtn">دخول</button>
+                    <button class="btn-outline" id="signUpBtn">إنشاء حساب جديد</button>
+                </div>
+                <button class="btn-outline" id="anonBtn" style="width: 100%; margin-top: 5px; font-size: 0.8rem;">
+                    ⚡ دخول سريع بدون حساب (زائر مؤقت)
+                </button>
             </div>
         </div>
 
-        <!-- حقل إدخال المبلغ -->
-        <div class="input-group">
-            <input type="number" id="amountInput" placeholder="أدخل السعر (مثلاً: 25.5)" step="any" inputmode="decimal">
-            <button class="btn-primary" id="addBtn">➕ إضافة</button>
+        <!-- شريط حالة الحساب والتسجيل -->
+        <div class="user-status hidden" id="userStatusSection">
+            <span id="userEmailBadge">👤 حسابك: -</span>
+            <button id="logoutBtn">تسجيل الخروج 🚪</button>
         </div>
 
-        <!-- قائمة السلع المدخلة لهذه الجلسة -->
-        <div class="items-list" id="itemsList">
-            <div class="empty-msg">جاري تحميل مساحتك الخاصة...</div>
-        </div>
+        <!-- التطبيق الرئيسي (يظهر بعد الاتصال) -->
+        <div id="appMainSection" class="hidden">
+            <!-- حقل تحديد سقف الميزانية -->
+            <div class="budget-setup">
+                <label for="budgetLimit">سقف الميزانية:</label>
+                <input type="number" id="budgetLimit" placeholder="مثلاً: 1000">
+            </div>
 
-        <!-- الأزرار الإدارية للجلسة -->
-        <div class="actions-grid">
-            <button class="btn-primary" id="saveMonthBtn">💾 حفظ الشهر</button>
-            <button class="btn-danger" id="resetBtn">🔄 تصفير العداد</button>
-        </div>
+            <!-- لوحة العرض الإجمالي -->
+            <div class="display-box">
+                <div class="label">إجمالي جلسة التسوق الحالية</div>
+                <div class="total-amount" id="totalDisplay">0.00</div>
+                <div class="session-date" id="sessionDate">بداية الجلسة: -</div>
+            </div>
 
-        <!-- قسم الأرشيف الشهري الخاص -->
-        <div class="archives-section">
-            <h3>📊 أرشيفك الشهري الخاص</h3>
-            <div id="archivesList">
-                <div class="empty-msg">لا توجد أشهر مؤرشفة في حسابك بعد</div>
+            <!-- شريط التقدم البصري للميزانية -->
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progressPercent">0% من الميزانية</span>
+                    <span id="budgetRemaining">المتبقي: -</span>
+                </div>
+            </div>
+
+            <!-- حقل إدخال المبلغ -->
+            <div class="input-group">
+                <input type="number" id="amountInput" placeholder="أدخل السعر (مثلاً: 25.5)" step="any" inputmode="decimal">
+                <button class="btn-primary" id="addBtn">➕ إضافة</button>
+            </div>
+
+            <!-- قائمة السلع المدخلة لهذا الحساب -->
+            <div class="items-list" id="itemsList">
+                <div class="empty-msg">جاري تحميل مساحتك الخاصة...</div>
+            </div>
+
+            <!-- الأزرار الإدارية للجلسة -->
+            <div class="actions-grid">
+                <button class="btn-primary" id="saveMonthBtn">💾 حفظ الشهر</button>
+                <button class="btn-danger" id="resetBtn">🔄 تصفير العداد</button>
+            </div>
+
+            <!-- قسم الأرشيف الشهري الخاص -->
+            <div class="archives-section">
+                <h3>📊 أرشيفك الشهري الخاص</h3>
+                <div id="archivesList">
+                    <div class="empty-msg">لا توجد أشهر مؤرشفة في حسابك بعد</div>
+                </div>
             </div>
         </div>
 
@@ -380,10 +467,10 @@
         </footer>
     </div>
 
-    <!-- ربط وحدات Firebase Module SDK وشعاع الخصوصية المخصص -->
+    <!-- ربط وحدات Firebase Module SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -406,34 +493,88 @@
         let sessionStartTime = "";
         let budgetLimitValue = 0;
 
+        const authSection = document.getElementById('authSection');
+        const userStatusSection = document.getElementById('userStatusSection');
+        const appMainSection = document.getElementById('appMainSection');
+        const userEmailBadge = document.getElementById('userEmailBadge');
+
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const signUpBtn = document.getElementById('signUpBtn');
+        const anonBtn = document.getElementById('anonBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
         const budgetInput = document.getElementById('budgetLimit');
         const amountInput = document.getElementById('amountInput');
         const addBtn = document.getElementById('addBtn');
         const saveMonthBtn = document.getElementById('saveMonthBtn');
         const resetBtn = document.getElementById('resetBtn');
-        const userBadge = document.getElementById('userBadge');
 
-        // تسجيل الدخول التلقائي المستقل لكل جهاز
-        signInAnonymously(auth).catch((error) => {
-            console.error("خطأ تسجيل الدخول البسيط:", error);
+        // أزرار الحساب والدخول
+        loginBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            if (!email || !password) return alert('يرجى إدخال البريد وكلمة المرور');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) {
+                alert('خطأ في تسجيل الدخول: ' + err.message);
+            }
         });
 
+        signUpBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            if (!email || !password) return alert('يرجى إدخال البريد وكلمة المرور');
+            if (password.length < 6) return alert('كلمة المرور يجب أن تكون 6 أحرف/أرقام على الأقل');
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('تم إنشاء الحساب بنجاح!');
+            } catch (err) {
+                alert('خطأ في إنشاء الحساب: ' + err.message);
+            }
+        });
+
+        anonBtn.addEventListener('click', async () => {
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {
+                alert('خطأ الدخول المؤقت: ' + err.message);
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await signOut(auth);
+        });
+
+        // مراقبة حالة تسجيل الدخول
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                userBadge.innerText = "ID: " + user.uid.substring(0, 6) + "...";
+                authSection.classList.add('hidden');
+                userStatusSection.classList.remove('hidden');
+                appMainSection.classList.remove('hidden');
+
+                if (user.isAnonymous) {
+                    userEmailBadge.innerText = "👤 زائر مؤقت (ID: " + user.uid.substring(0, 5) + ")";
+                } else {
+                    userEmailBadge.innerText = "👤 " + user.email;
+                }
+
                 listenToCurrentSession();
                 renderArchives();
             } else {
                 currentUser = null;
-                userBadge.innerText = "غير متصل";
+                authSection.classList.remove('hidden');
+                userStatusSection.classList.add('hidden');
+                appMainSection.classList.add('hidden');
             }
         });
 
-        // الاستماع الفوري لمساحة المستخدم الخاصة فقط users/{uid}/sessions/current_session
+        // الاستماع الفوري لبيانات المستخدم المسجل فقط
         function listenToCurrentSession() {
             if (!currentUser) return;
-            
             if (unsubscribeSession) unsubscribeSession();
 
             const docRef = doc(db, 'users', currentUser.uid, 'sessions', 'current_session');
@@ -458,8 +599,6 @@
                     if (!sessionStartTime) setSessionStart();
                 }
                 updateUI();
-            }, (error) => {
-                console.error("خطأ التزامن الحقيقي:", error);
             });
         }
 
@@ -478,11 +617,7 @@
 
         async function addAmount() {
             const val = parseFloat(amountInput.value);
-
-            if (isNaN(val) || val <= 0) {
-                alert('الرجاء إدخال مبلغ صحيح أكبر من الصفر');
-                return;
-            }
+            if (isNaN(val) || val <= 0) return alert('الرجاء إدخال مبلغ صحيح');
 
             if (!sessionStartTime) setSessionStart();
 
@@ -577,7 +712,7 @@
                     budgetLimit: parseFloat(budgetInput.value) || 0
                 });
             } catch (error) {
-                console.error("خطأ أثناء الحفظ في Firebase:", error);
+                console.error("خطأ الحفظ:", error);
             }
         }
 
@@ -591,7 +726,7 @@
                 try {
                     await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', 'current_session'));
                 } catch (e) {
-                    console.error("خطأ أثناء التصفير:", e);
+                    console.error("خطأ التصفير:", e);
                 }
             }
         }
@@ -599,10 +734,7 @@
 
         async function saveAndResetSession() {
             if (!currentUser) return;
-            if (currentTotal <= 0) {
-                alert('لا يوجد مصروفات لتسجيلها هذا الشهر.');
-                return;
-            }
+            if (currentTotal <= 0) return alert('لا يوجد مصروفات لتسجيلها هذا الشهر.');
 
             const now = new Date();
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -634,10 +766,9 @@
                 await deleteDoc(doc(db, 'users', currentUser.uid, 'sessions', 'current_session'));
 
                 await renderArchives();
-                alert('تم حفظ وترحيل المصروفات بنجاح إلى أرشيفك الخاص!');
+                alert('تم حفظ وترحيل المصروفات بنجاح إلى حسابك!');
             } catch (error) {
-                console.error("خطأ أثناء الحفظ للأرشيف:", error);
-                alert("حدث خطأ أثناء الحفظ في Firebase.");
+                alert("حدث خطأ أثناء الحفظ.");
             }
         }
         saveMonthBtn.addEventListener('click', saveAndResetSession);
@@ -669,7 +800,6 @@
                 });
                 archivesContainer.innerHTML = html;
             } catch (error) {
-                console.error("خطأ أثناء تحميل الأرشيف:", error);
                 archivesContainer.innerHTML = '<div class="empty-msg">لا توجد أشهر مؤرشفة في حسابك بعد</div>';
             }
         }
@@ -694,7 +824,7 @@
                 link.click();
                 document.body.removeChild(link);
             } catch (e) {
-                console.error("خطأ أثناء التصدير:", e);
+                console.error("خطأ التصدير:", e);
             }
         }
         window.exportMonthCSV = exportMonthCSV;
